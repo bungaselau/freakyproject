@@ -1,0 +1,2 @@
+# freakyproject
+projetos estranhos
