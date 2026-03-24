@@ -4,21 +4,29 @@ include "conexao.php";
 $nome = $_POST['nome'];
 $telefone = $_POST['telefone'];
 
-// Verifica duplicidade pelo nome
-$verificar = "SELECT id FROM vendedor WHERE nome='$nome'";
-$resultado = $conn->query($verificar);
+try {
+    // Verifica duplicidade pelo nome
+    $sql_verifica = "SELECT id FROM vendedor WHERE nome = :nome";
+    $stmt = $conn->prepare($sql_verifica);
+    $stmt->execute([':nome' => $nome]);
 
-if ($resultado->num_rows > 0) {
-    echo "Vendedor já cadastrado com este nome.";
-} else {
-    $sql = "INSERT INTO vendedor(nome, telefone, quantidade_vendas, cliente_vendas)
-            VALUES('$nome','$telefone',0,'')";
-    if ($conn->query($sql) === TRUE) {
-        echo "Vendedor cadastrado com sucesso!";
+    if ($stmt->rowCount() > 0) {
+        echo "Vendedor já cadastrado com este nome.";
     } else {
-        echo "Erro ao cadastrar vendedor: " . $conn->error;
-    }
-}
+        // Inserir vendedor
+        $sql = "INSERT INTO vendedor (nome, telefone, quantidade_vendas, cliente_vendas)
+                VALUES (:nome, :telefone, 0, '')";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':nome' => $nome,
+            ':telefone' => $telefone
+        ]);
 
-$conn->close();
+        echo "Vendedor cadastrado com sucesso!";
+    }
+
+} catch (PDOException $e) {
+    echo "Erro ao cadastrar vendedor: " . $e->getMessage();
+}
 ?>

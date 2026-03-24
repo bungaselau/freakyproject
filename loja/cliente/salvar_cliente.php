@@ -14,26 +14,48 @@ $estado = $_POST['estado'];
 $cep = $_POST['cep'];
 $complemento = $_POST['complemento'];
 
-// Inserir endereço primeiro
-$sql_endereco = "INSERT INTO endereco(rua, numero, bairro, cidade, estado, cep, complemento)
-                 VALUES('$rua','$numero','$bairro','$cidade','$estado','$cep','$complemento')";
+try {
+    // Inicia transação (boa prática)
+    $conn->beginTransaction();
 
-if ($conn->query($sql_endereco) === TRUE) {
-    $endereco_id = $conn->insert_id;
+    // Inserir endereço
+    $sql_endereco = "INSERT INTO endereco (rua, numero, bairro, cidade, estado, cep, complemento)
+                     VALUES (:rua, :numero, :bairro, :cidade, :estado, :cep, :complemento)";
+    
+    $stmt = $conn->prepare($sql_endereco);
+    $stmt->execute([
+        ':rua' => $rua,
+        ':numero' => $numero,
+        ':bairro' => $bairro,
+        ':cidade' => $cidade,
+        ':estado' => $estado,
+        ':cep' => $cep,
+        ':complemento' => $complemento
+    ]);
 
-    // Inserir cliente com endereco_id
-    $sql_cliente = "INSERT INTO cliente(nome, cpf, telefone, endereco_id)
-                    VALUES('$nome','$cpf','$telefone','$endereco_id')";
+    // Pega o ID do endereço inserido
+    $endereco_id = $conn->lastInsertId();
 
-    if ($conn->query($sql_cliente) === TRUE) {
-        echo "Cliente cadastrado com sucesso!";
-    } else {
-        echo "Erro ao cadastrar cliente: " . $conn->error;
-    }
+    // Inserir cliente
+    $sql_cliente = "INSERT INTO cliente (nome, cpf, telefone, endereco_id)
+                    VALUES (:nome, :cpf, :telefone, :endereco_id)";
+    
+    $stmt = $conn->prepare($sql_cliente);
+    $stmt->execute([
+        ':nome' => $nome,
+        ':cpf' => $cpf,
+        ':telefone' => $telefone,
+        ':endereco_id' => $endereco_id
+    ]);
 
-} else {
-    echo "Erro ao cadastrar endereço: " . $conn->error;
+    // Confirma tudo
+    $conn->commit();
+
+    echo "Cliente cadastrado com sucesso!";
+
+} catch (PDOException $e) {
+    // Desfaz tudo se der erro
+    $conn->rollBack();
+    echo "Erro: " . $e->getMessage();
 }
-
-$conn->close();
 ?>

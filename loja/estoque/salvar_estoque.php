@@ -6,21 +6,31 @@ $quantidade = $_POST['quantidade_calca'];
 $preco_fornecedor = $_POST['preco_fornecedor'];
 $preco_venda = $_POST['preco_venda'];
 
-// Verifica se já existe estoque para o produto
-$verificar = "SELECT id FROM estoque WHERE produto_id='$produto_id'";
-$resultado = $conn->query($verificar);
+try {
+    // Verifica se já existe estoque para o produto
+    $sql_verifica = "SELECT id FROM estoque WHERE produto_id = :produto_id";
+    $stmt = $conn->prepare($sql_verifica);
+    $stmt->execute([':produto_id' => $produto_id]);
 
-if ($resultado->num_rows > 0) {
-    echo "Estoque já cadastrado para este produto.";
-} else {
-    $sql = "INSERT INTO estoque(produto_id, quantidade_calca, preco_fornecedor, preco_venda)
-            VALUES('$produto_id','$quantidade','$preco_fornecedor','$preco_venda')";
-    if ($conn->query($sql) === TRUE) {
-        echo "Estoque cadastrado com sucesso!";
+    if ($stmt->rowCount() > 0) {
+        echo "Estoque já cadastrado para este produto.";
     } else {
-        echo "Erro ao cadastrar estoque: " . $conn->error;
-    }
-}
+        // Inserir estoque
+        $sql = "INSERT INTO estoque (produto_id, quantidade_calca, preco_fornecedor, preco_venda)
+                VALUES (:produto_id, :quantidade, :preco_fornecedor, :preco_venda)";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':produto_id' => $produto_id,
+            ':quantidade' => $quantidade,
+            ':preco_fornecedor' => $preco_fornecedor,
+            ':preco_venda' => $preco_venda
+        ]);
 
-$conn->close();
+        echo "Estoque cadastrado com sucesso!";
+    }
+
+} catch (PDOException $e) {
+    echo "Erro: " . $e->getMessage();
+}
 ?>

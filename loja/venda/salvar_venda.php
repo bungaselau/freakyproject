@@ -7,15 +7,25 @@ $vendedor_id = $_POST['vendedor_id'];
 $quantidade = $_POST['quantidade'];
 $valor_total = $_POST['valor_total'];
 
-// Inserir venda
-$sql = "INSERT INTO venda(cliente_id, produto_id, vendedor_id, quantidade, valor_total, data_venda)
-        VALUES('$cliente_id','$produto_id','$vendedor_id','$quantidade','$valor_total', NOW())";
+try {
+    // Inserir venda
+    $sql = "INSERT INTO venda 
+            (cliente_id, produto_id, vendedor_id, quantidade, valor_total, data_venda)
+            VALUES 
+            (:cliente_id, :produto_id, :vendedor_id, :quantidade, :valor_total, NOW())";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
+        ':cliente_id' => $cliente_id,
+        ':produto_id' => $produto_id,
+        ':vendedor_id' => $vendedor_id,
+        ':quantidade' => $quantidade,
+        ':valor_total' => $valor_total
+    ]);
 
-if ($conn->query($sql) === TRUE) {
     echo "Venda registrada com sucesso!";
-} else {
-    echo "Erro ao registrar venda: " . $conn->error;
-}
 
-$conn->close();
+} catch (PDOException $e) {
+    echo "Erro ao registrar venda: " . $e->getMessage();
+}
 ?>
